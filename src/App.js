@@ -1,17 +1,6 @@
 import React, {useState} from 'react';
-import AppBar from '@material-ui/core/AppBar';
-import Button from '@material-ui/core/Button';
-import CssBaseline from '@material-ui/core/CssBaseline';
-import Grid from '@material-ui/core/Grid';
-import Toolbar from '@material-ui/core/Toolbar';
-import Typography from '@material-ui/core/Typography';
-import { makeStyles } from '@material-ui/core/styles';
-import Container from '@material-ui/core/Container';
-import Link from '@material-ui/core/Link';
-import SvgIcon from '@material-ui/core/SvgIcon';
-import TextField from '@material-ui/core/TextField';
+import {AppBar, Button, Grid, Container, Link, Toolbar, SvgIcon, TextField, CssBaseline, Typography, InputAdornment, makeStyles, withStyles} from "@material-ui/core";
 import DescriptionOutlinedIcon from '@material-ui/icons/DescriptionOutlined';
-import {InputAdornment, withStyles} from "@material-ui/core";
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 
@@ -129,13 +118,14 @@ export default function Album() {
         providerOptions // required
     });
 
+    // connect Web3
     const [accounts, setAccounts] = useState([]);
     const [provider, setProvider] = useState(null);
     const connectWeb3 = async() => {
         try {
             const provider = await web3Modal.connect();
             setProvider(provider);
-            console.log(provider)
+            console.log(provider);
             if (provider) {
                 if (provider.on) {
                     provider.on("accountsChanged", (accounts) => {
@@ -161,6 +151,39 @@ export default function Album() {
         }
     }
 
+    // disconnect Web3
+    const disconnectWeb3 = async() => {
+        if(provider.close) {
+            await provider.close();
+        }
+        web3Modal.clearCachedProvider();
+        setProvider(null);
+        setAccounts([]);
+    }
+
+    // set bytecode
+    const [bytecode, setBytecode ] = useState('');
+    const handleBytecode = (e) => {
+        setBytecode(e.target.value);
+        console.log(e.target.value);
+    }
+
+    // deploy contract using bytecode
+    const [contractAddress, setContractAddress ] = useState('');
+    const deployContract = async() => {
+        const web3 = new Web3(provider);
+        const gasPrice = await web3.eth.getGasPrice();
+        const nonce = await web3.eth.getTransactionCount(accounts[0]);
+        const rawTx = {
+            from: accounts[0],
+            nonce: nonce,
+            gasPrice: gasPrice,
+            data: bytecode
+        }
+        const result = await web3.eth.sendTransaction(rawTx);
+        setContractAddress(result['contractAddress']);
+        console.log(result['contractAddress']);
+    }
 
     return (
       <React.Fragment>
@@ -171,8 +194,8 @@ export default function Album() {
                 <Typography variant="h6" className={classes.title}>
                     OKExChain Tools
                 </Typography>
-                {!provider && <Button edge="end" variant="outlined" color="inherit" onClick={connectWeb3}>Connect Wallet</Button> }
-                {provider && <Button edge="end" variant="outlined" color="inherit">{accounts[0]}</Button> }
+                {!provider && <Button edge="end" variant="outlined" color="inherit" onClick={connectWeb3}>Connect Metamask</Button>}
+                {provider && <Button edge="end" variant="outlined" color="inherit" onClick={disconnectWeb3}>{accounts[0]}</Button>}
             </Toolbar>
         </AppBar>
         <main>
@@ -186,12 +209,13 @@ export default function Album() {
           </div>
           {/* End hero unit */}
             <div className={classes.cardGrid} >
-                <Container className={classes.cardGrid} fixed>
+                <Container className={classes.cardGrid} maxWidth="md">
                     <ValidationTextField
                         id="bytecode-text-field"
                         multiline
                         rows={10}
                         fullWidth
+                        onChange={handleBytecode}
                         InputLabelProps={{
                             shrink: true,
                         }}
@@ -200,7 +224,7 @@ export default function Album() {
                     <div className={classes.buttons} >
                         <Grid container spacing={2} alignItems="center">
                             <Grid item>
-                                <Button variant="contained" size="large" color="primary"  startIcon={<DescriptionOutlinedIcon />}>
+                                <Button variant="contained" size="large" color="primary" onClick={deployContract} startIcon={<DescriptionOutlinedIcon />}>
                                     Deploy Contract
                                 </Button>
                             </Grid>
@@ -212,6 +236,7 @@ export default function Album() {
                                         readOnly: true,
                                         startAdornment: <InputAdornment position="start">Contract Address:</InputAdornment>,
                                     }}
+                                    value={contractAddress}
                                     size="small"
                                     variant="outlined"
                                 />
