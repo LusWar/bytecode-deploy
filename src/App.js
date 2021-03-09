@@ -108,10 +108,8 @@ const ValidationTextField = withStyles({
 })(TextField);
 
 export default function Album() {
-  const classes = useStyles();
-
+    const classes = useStyles();
     const providerOptions = {};
-
     const web3Modal = new Web3Modal({
         network: "ok-test", // optional
         cacheProvider: true, // optional
@@ -153,12 +151,16 @@ export default function Album() {
 
     // disconnect Web3
     const disconnectWeb3 = async() => {
-        if(provider.close) {
-            await provider.close();
+        try {
+            if (provider.close) {
+                await provider.close();
+            }
+            web3Modal.clearCachedProvider();
+            setProvider(null);
+            setAccounts([]);
+        } catch (err) {
+            console.log(err.toString());
         }
-        web3Modal.clearCachedProvider();
-        setProvider(null);
-        setAccounts([]);
     }
 
     // set bytecode
@@ -171,18 +173,22 @@ export default function Album() {
     // deploy contract using bytecode
     const [contractAddress, setContractAddress ] = useState('');
     const deployContract = async() => {
-        const web3 = new Web3(provider);
-        const gasPrice = await web3.eth.getGasPrice();
-        const nonce = await web3.eth.getTransactionCount(accounts[0]);
-        const rawTx = {
-            from: accounts[0],
-            nonce: nonce,
-            gasPrice: gasPrice,
-            data: bytecode
+        try {
+            const web3 = new Web3(provider);
+            const gasPrice = await web3.eth.getGasPrice();
+            const nonce = await web3.eth.getTransactionCount(accounts[0]);
+            const rawTx = {
+                from: accounts[0],
+                nonce: nonce,
+                gasPrice: gasPrice,
+                data: bytecode
+            }
+            const result = await web3.eth.sendTransaction(rawTx);
+            setContractAddress(result['contractAddress']);
+            console.log(result['contractAddress']);
+        } catch (err) {
+            console.log(err.toString());
         }
-        const result = await web3.eth.sendTransaction(rawTx);
-        setContractAddress(result['contractAddress']);
-        console.log(result['contractAddress']);
     }
 
     return (
