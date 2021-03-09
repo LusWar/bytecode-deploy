@@ -1,10 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import AppBar from '@material-ui/core/AppBar';
 import Button from '@material-ui/core/Button';
-import Card from '@material-ui/core/Card';
-import CardActions from '@material-ui/core/CardActions';
-import CardContent from '@material-ui/core/CardContent';
-import CardMedia from '@material-ui/core/CardMedia';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Grid from '@material-ui/core/Grid';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -14,7 +10,11 @@ import Container from '@material-ui/core/Container';
 import Link from '@material-ui/core/Link';
 import SvgIcon from '@material-ui/core/SvgIcon';
 import TextField from '@material-ui/core/TextField';
-import {withStyles} from "@material-ui/core";
+import DescriptionOutlinedIcon from '@material-ui/icons/DescriptionOutlined';
+import {InputAdornment, withStyles} from "@material-ui/core";
+import Web3 from "web3";
+import Web3Modal from "web3modal";
+
 function Copyright() {
   return (
       <Typography variant="body2" color="textSecondary" align="center">
@@ -76,6 +76,9 @@ const useStyles = makeStyles((theme) => ({
     icon: {
         marginRight: theme.spacing(2),
     },
+    title: {
+        flexGrow: 1,
+    },
     heroContent: {
         backgroundColor: theme.palette.background.paper,
         padding: theme.spacing(8, 0, 6),
@@ -118,23 +121,66 @@ const ValidationTextField = withStyles({
 export default function Album() {
   const classes = useStyles();
 
-  return (
+    const providerOptions = {};
+
+    const web3Modal = new Web3Modal({
+        network: "ok-test", // optional
+        cacheProvider: true, // optional
+        providerOptions // required
+    });
+
+    const [accounts, setAccounts] = useState([]);
+    const [provider, setProvider] = useState(null);
+    const connectWeb3 = async() => {
+        try {
+            const provider = await web3Modal.connect();
+            setProvider(provider);
+            console.log(provider)
+            if (provider) {
+                if (provider.on) {
+                    provider.on("accountsChanged", (accounts) => {
+                        console.log(accounts);
+                        setAccounts(accounts);
+                    });
+                    provider.on("chainChanged", (chainId) => {
+                        console.log(chainId);
+                    });
+                    provider.on("connect", (info) => { // : { chainId: number }
+                        console.log(info);
+                    });
+                    provider.on("disconnect", (error) => {  // : { code: number; message: string }
+                        console.log(error);
+                    });
+                }
+                const web3 = new Web3(provider);
+                const accounts = await web3.eth.getAccounts();
+                setAccounts(accounts);
+            }
+        } catch (err) {
+            console.log(err.toString());
+        }
+    }
+
+
+    return (
       <React.Fragment>
         <CssBaseline />
-        <AppBar position="relative">
-          <Toolbar>
-            <HomeIcon className={classes.icon} />
-            <Typography variant="h6" color="inherit" noWrap>
-              OKExChain Tools
-            </Typography>
-          </Toolbar>
+        <AppBar position="static">
+            <Toolbar>
+                <HomeIcon className={classes.icon} />
+                <Typography variant="h6" className={classes.title}>
+                    OKExChain Tools
+                </Typography>
+                {!provider && <Button edge="end" variant="outlined" color="inherit" onClick={connectWeb3}>Connect Wallet</Button> }
+                {provider && <Button edge="end" variant="outlined" color="inherit">{accounts[0]}</Button> }
+            </Toolbar>
         </AppBar>
         <main>
           {/* Hero unit */}
           <div className={classes.heroContent}>
             <Container maxWidth="md">
-              <Typography component="h3" variant="h4" align="center" color="textPrimary" gutterBottom>
-                  Deploying contract using bytecode
+              <Typography component="h3" variant="h4" align="center" color="textPrimary">
+                  Deploy contract using bytecode
               </Typography>
             </Container>
           </div>
@@ -142,7 +188,7 @@ export default function Album() {
             <div className={classes.cardGrid} >
                 <Container className={classes.cardGrid} fixed>
                     <ValidationTextField
-                        id="outlined-multiline-static"
+                        id="bytecode-text-field"
                         multiline
                         rows={10}
                         fullWidth
@@ -152,11 +198,23 @@ export default function Album() {
                         variant="outlined"
                     />
                     <div className={classes.buttons} >
-                        <Grid container spacing={2} justify="center">
+                        <Grid container spacing={2} alignItems="center">
                             <Grid item>
-                                <Button variant="contained" color="primary" disableElevation>
+                                <Button variant="contained" size="large" color="primary"  startIcon={<DescriptionOutlinedIcon />}>
                                     Deploy Contract
                                 </Button>
+                            </Grid>
+                            <Grid item xs>
+                                <TextField
+                                    fullWidth
+                                    id="contract-address-text-field"
+                                    InputProps={{
+                                        readOnly: true,
+                                        startAdornment: <InputAdornment position="start">Contract Address:</InputAdornment>,
+                                    }}
+                                    size="small"
+                                    variant="outlined"
+                                />
                             </Grid>
                         </Grid>
                     </div>
