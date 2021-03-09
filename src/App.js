@@ -132,6 +132,8 @@ export default function Album() {
     // deploy contract state
     const [deployState, setDeployState] = useState(false);
     const [contractLink, setContractLink] = useState("");
+    const [deployError, setDeployError] = useState("");
+    const [calling, setCalling] = useState(false);
 
     // connect Web3
     const [accounts, setAccounts] = useState([]);
@@ -192,6 +194,7 @@ export default function Album() {
     const [contractAddress, setContractAddress ] = useState('');
     const deployContract = async() => {
         try {
+            setCalling(true);
             const web3 = new Web3(provider);
             const gasPrice = await web3.eth.getGasPrice();
             const nonce = await web3.eth.getTransactionCount(accounts[0]);
@@ -206,9 +209,13 @@ export default function Album() {
             setDeployState(true);
             setContractLink("https://www.oklink.com/okexchain-test/address/" + result['contractAddress'])
             console.log(result['contractAddress']);
+            setCalling(false);
         } catch (err) {
             setDeployState(false);
+            const error = err.toString();
+            setDeployError( error);
             console.log(err.toString());
+            setCalling(false);
         }
     }
 
@@ -216,6 +223,7 @@ export default function Album() {
     const resetBytecode = () => {
         setBytecode("");
         setDeployState(false);
+        setDeployError("");
     }
 
     return (
@@ -294,14 +302,19 @@ export default function Album() {
                                         {contractLinkSuffix}
                                     </Box>
                                 )}
+                                {!deployState && (
+                                    <Box fontWeight="fontWeightBold" fontSize={14} color="red">
+                                        {deployError}
+                                    </Box>
+                                )}
                             </Grid>
                             <Grid item>
-                                <Button variant="contained" color="primary" onClick={deployContract} startIcon={<DescriptionOutlinedIcon />} disableElevation>
+                                <Button variant="contained" color="primary" onClick={deployContract} disabled={calling} startIcon={<DescriptionOutlinedIcon />} disableElevation>
                                     Deploy Contract
                                 </Button>
                             </Grid>
                             <Grid item>
-                                <Button variant="contained" onClick={resetBytecode} startIcon={<CachedRoundedIcon />} disableElevation>
+                                <Button variant="contained" onClick={resetBytecode} disabled={calling} startIcon={<CachedRoundedIcon />} disableElevation>
                                     Reset
                                 </Button>
                             </Grid>
