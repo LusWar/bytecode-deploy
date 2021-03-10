@@ -11,7 +11,9 @@ import {
     CssBaseline,
     Typography,
     makeStyles,
-    Divider, Box
+    Divider,
+    Box,
+    CircularProgress
 } from "@material-ui/core";
 import DescriptionOutlinedIcon from '@material-ui/icons/DescriptionOutlined';
 import CachedRoundedIcon from '@material-ui/icons/CachedRounded';
@@ -165,7 +167,7 @@ export default function Album() {
                 setDeployState(false);
             }
         } catch (err) {
-            console.log(err.toString());
+            console.log(err.message);
         }
     }
 
@@ -179,7 +181,7 @@ export default function Album() {
             setProvider(null);
             setAccounts([]);
         } catch (err) {
-            console.log(err.toString());
+            console.log(err.message);
         }
     }
 
@@ -212,9 +214,9 @@ export default function Album() {
             setCalling(false);
         } catch (err) {
             setDeployState(false);
-            const error = err.toString();
-            setDeployError( error);
-            console.log(err.toString());
+            const error = err.message;
+            setDeployError("Error: " + error);
+            console.log(err.message);
             setCalling(false);
         }
     }
@@ -295,14 +297,17 @@ export default function Album() {
                         />
                         <Grid container className={classes.contentBottom} spacing={3} alignItems="center">
                             <Grid item xs>
-                                {deployState && (
+                                {calling && (
+                                    <CircularProgress size={30}/>
+                                )}
+                                {deployState && !calling && (
                                     <Box fontWeight="fontWeightBold" fontSize={14} color="green">
                                         {"Contract Address: " + contractAddress + contractLinkPrefix}
                                         <a href={contractLink} target="_blank" rel="noreferrer" color={green}>OKLink</a>
                                         {contractLinkSuffix}
                                     </Box>
                                 )}
-                                {!deployState && (
+                                {!deployState && !calling && (
                                     <Box fontWeight="fontWeightBold" fontSize={14} color="red">
                                         {deployError}
                                     </Box>
